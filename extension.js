@@ -70,6 +70,7 @@ async function activate(context) {
 	// Register the streaming service command
 	const streamingDisposable = vscode.commands.registerCommand('swise-agent-extension.callService', async function () {
 		// Create and show webview panel with form anchored to the right
+		const iconPath = vscode.Uri.joinPath(context.extensionUri, 'robot-icon.svg');
 		const panel = vscode.window.createWebviewPanel(
 			'serviceForm',
 			'Swise [SNIP] Agent Form',
@@ -79,6 +80,9 @@ async function activate(context) {
 				retainContextWhenHidden: true
 			}
 		);
+
+		// Set the icon for the webview panel
+		panel.iconPath = iconPath;
 
 		panel.webview.html = getWebviewContent();
 
@@ -657,14 +661,36 @@ async function callStreamingService(userContent, panel, outputChannel) {
 				});
 			});
 
-			res.on('end', () => {
-				const completionMsg = '\n\n**--- Stream completed ---**';
-				webviewContent += completionMsg;
-				panel.webview.postMessage({
-					command: 'updateResults',
-					content: webviewContent,
-					isMarkdown: true
-				});
+			res.on('end', async () => {
+				try {
+					// Fetch memory statistics
+					const memoryUrl = `${baseUrl}/memory/messages/tokens`;
+					const memoryResponse = await fetch(memoryUrl);
+					const memoryData = await memoryResponse.json();
+
+					// Fetch models information
+					const modelsUrl = `${baseUrl}/models`;
+					const modelsResponse = await fetch(modelsUrl);
+					const modelsData = await modelsResponse.json();
+
+					const completionMsg = `\n\n**--- Stream completed ---**\n\n**Messages:** ${memoryData.count} | **Token Count Estimate:** ${memoryData.tokens} | **Limit:** ${memoryData.limit}\n\n**Chat Model:** ${modelsData.chat_model}\n\n**Embeddings Model:** ${modelsData.embeddings_model}`;
+					webviewContent += completionMsg;
+					panel.webview.postMessage({
+						command: 'updateResults',
+						content: webviewContent,
+						isMarkdown: true
+					});
+				} catch (error) {
+					// Fallback if memory endpoint fails
+					const completionMsg = '\n\n**--- Stream completed ---**';
+					webviewContent += completionMsg;
+					panel.webview.postMessage({
+						command: 'updateResults',
+						content: webviewContent,
+						isMarkdown: true
+					});
+					outputChannel.appendLine(`[WARNING] Failed to fetch memory stats: ${error.message}`);
+				}
 				resolve();
 			});
 

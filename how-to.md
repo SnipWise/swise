@@ -8,6 +8,7 @@ Press `F5` in your extension's workspace. This opens a new VSCode window with yo
 
 First, package your extension:
 ```bash
+# change the version of the extension in package.json if needed
 npx @vscode/vsce package
 ```
 
@@ -18,7 +19,7 @@ This creates a `.vsix` file. Then install it:
 
 OR via command line:
 ```bash
-code --install-extension swise-agent-extension-0.0.1.vsix
+code --install-extension swise-agent-extension-0.0.0-dev.vsix
 ```
 
 ## 3. Link for Development

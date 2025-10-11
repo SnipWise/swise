@@ -1,0 +1,27 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Robot head icon inspired by 🤖 -->
+
+  <!-- Head -->
+  <rect x="4" y="3" width="24" height="24" rx="2" fill="#78B9E8"/>
+  <rect x="4" y="3" width="24" height="24" rx="2" fill="none" stroke="#5A9FD4" stroke-width="1.5"/>
+
+  <!-- Eyes -->
+  <rect x="7" y="10" width="7" height="7" rx="1" fill="#2C3E50"/>
+  <rect x="18" y="10" width="7" height="7" rx="1" fill="#2C3E50"/>
+
+  <!-- Eye highlights -->
+  <circle cx="9.5" cy="12.5" r="1.8" fill="#FFFFFF"/>
+  <circle cx="20.5" cy="12.5" r="1.8" fill="#FFFFFF"/>
+
+  <!-- Mouth/grill -->
+  <rect x="9" y="21" width="14" height="3" rx="1" fill="#2C3E50"/>
+  <line x1="11" y1="21" x2="11" y2="24" stroke="#5A9FD4" stroke-width="0.8"/>
+  <line x1="13" y1="21" x2="13" y2="24" stroke="#5A9FD4" stroke-width="0.8"/>
+  <line x1="16" y1="21" x2="16" y2="24" stroke="#5A9FD4" stroke-width="0.8"/>
+  <line x1="19" y1="21" x2="19" y2="24" stroke="#5A9FD4" stroke-width="0.8"/>
+  <line x1="21" y1="21" x2="21" y2="24" stroke="#5A9FD4" stroke-width="0.8"/>
+
+  <!-- Ears/Sensors -->
+  <rect x="1" y="11" width="3" height="10" rx="1" fill="#5A9FD4"/>
+  <rect x="28" y="11" width="3" height="10" rx="1" fill="#5A9FD4"/>
+</svg>

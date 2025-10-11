@@ -1,0 +1,59 @@
+{
+  "name": "swise-agent-extension",
+  "displayName": "swise-agent-extension",
+  "description": "Swise Agent Extension",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SnipWise/swise"
+  },
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "swise-agent-extension.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "swise-agent-extension.callService",
+        "title": "Call SNIP Streaming Service"
+      }
+    ],
+    "configuration": {
+      "title": "Swise Agent Extension",
+      "properties": {
+        "swiseAgentExtension.serviceBaseUrl": {
+          "type": "string",
+          "default": "http://0.0.0.0:3500",
+          "description": "Base URL to access the completion service",
+          "pattern": "^https?://[^\\s/$.?#].[^\\s]*$",
+          "patternErrorMessage": "The URL must be valid and start with http:// or https://"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.104.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.34.0"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "marked": "^16.2.1"
+  }
+}

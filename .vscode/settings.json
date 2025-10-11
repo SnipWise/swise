@@ -1,0 +1,80 @@
+{
+    "workbench.iconTheme": "material-icon-theme",
+    "workbench.colorTheme": "Idea intellij light theme",
+    "editor.fontSize": 16,
+    "terminal.integrated.fontSize": 20,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": true,
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 1000,
+    "workbench.tree.indent": 20,
+    //"workbench.activityBar.location": "top",
+    "workbench.editor.showTabs": "multiple",
+    "window.zoomLevel": 0.0,
+    "[markdown]": {
+        "editor.unicodeHighlight.ambiguousCharacters": false,
+        "editor.unicodeHighlight.invisibleCharacters": false,
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.fontWeight": "normal",
+        "editor.fontFamily": "'Droid Sans Mono', 'monospace', monospace",
+        "editor.fontSize": 20,
+        "editor.wordWrap": "on",
+        "editor.quickSuggestions": {
+            "comments": "off",
+            "strings": "off",
+            "other": "off"
+        }
+    },
+    "markdown.preview.fontSize": 20,
+    "workbench.editorAssociations": {
+        "*.md": "vscode.markdown.preview.editor"
+    },
+    "markdown.marp.html": "all"  ,
+    "[dockerfile]": {
+        "editor.fontSize": 20,
+    },
+    "[dockercompose]": {
+        "editor.fontSize": 20,
+    },
+    "[json]": {
+        "editor.fontSize": 20,
+    },
+    "[javascript]": {
+        "editor.fontSize": 14,
+    },    
+    "[yaml]": {
+        "editor.fontSize": 20,
+
+    },
+    "[go]": {
+        "editor.fontSize": 20,
+    },
+    "todohighlight.keywords": [ 
+        {
+            "text": "[TODO]",
+            "color": "#ffffff",
+            "backgroundColor": "#0F8E33",
+            "border": "1px solid #0F8E33",
+            "borderRadius": "3px",
+            "isWholeLine": false
+        },      
+        {
+            "text": "[IMPORTANT]",
+            "color": "#ffffff",
+            "backgroundColor": "#860909",
+            "border": "1px solid #860909",
+            "borderRadius": "3px",
+            "isWholeLine": false
+        }, 
+        {
+            "text": "[NOTE]",
+            "color": "#ffffff",
+            "backgroundColor": "#336AB6",
+            "border": "1px solid #336AB6",
+            "borderRadius": "3px",
+            "isWholeLine": false
+        },    
+                                
+    ]
+}

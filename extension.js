@@ -93,10 +93,10 @@ async function activate(context) {
 					case 'submitRequest':
 						const userInput = message.text;
 						if (userInput && userInput.trim().length > 0) {
-							// Initialize results in webview with markdown header
-							const initialContent = `**Request:** ${userInput}\n\n**Response:**\n\n`;
+							// Add request header to conversation history
+							const initialContent = `\n\n---\n\n**Request:** ${userInput}\n\n**Response:**\n\n`;
 							panel.webview.postMessage({
-								command: 'updateResults',
+								command: 'appendResults',
 								content: initialContent,
 								isMarkdown: true
 							});
@@ -130,7 +130,7 @@ async function activate(context) {
 						try {
 							await callResetService(outputChannel);
 							panel.webview.postMessage({
-								command: 'updateResults',
+								command: 'resetResults',
 								content: '**Conversation reset successfully.**\n\n*No results yet. Use the form below to submit a request.*',
 								isMarkdown: true
 							});
@@ -379,7 +379,10 @@ function getWebviewContent() {
 		}
 
 		// Variable to store raw content for copying
-		let currentRawContent = '*No results yet. Use the form below to submit a request.*';
+		let currentRawContent = '';
+
+		// Variable to track if we should reset results or append
+		let shouldResetResults = true;
 
 		// Initialize with markdown content
 		showResults('*No results yet. Use the form below to submit a request.*', true, true);
@@ -395,9 +398,6 @@ function getWebviewContent() {
 				showError('Please enter a valid request');
 				return;
 			}
-
-			// Clear previous results and show loading
-			showResults('**Processing...**', false, true);
 
 			// Send message to extension
 			vscode.postMessage({
@@ -437,6 +437,7 @@ function getWebviewContent() {
 		// Handle Reset Conversation button
 		document.getElementById('resetButton').addEventListener('click', (e) => {
 			e.preventDefault();
+			shouldResetResults = true;
 			vscode.postMessage({
 				command: 'resetConversation'
 			});
@@ -467,7 +468,13 @@ function getWebviewContent() {
 				case 'clearForm':
 					clearForm();
 					break;
-				case 'updateResults':
+				case 'appendResults':
+					// Append new content to existing results
+					showResults(message.content, true, message.isMarkdown);
+					break;
+				case 'resetResults':
+					// Reset the conversation history
+					shouldResetResults = true;
 					showResults(message.content, true, message.isMarkdown);
 					break;
 				case 'showCancelSuccess':
@@ -488,12 +495,18 @@ function getWebviewContent() {
 		function showResults(content, isComplete, isMarkdown = false) {
 			const resultsElement = document.getElementById('resultsContent');
 
-			// Store raw content for copying
-			currentRawContent = content;
+			// If shouldResetResults is true, replace content. Otherwise append
+			if (shouldResetResults) {
+				currentRawContent = content;
+				shouldResetResults = false;
+			} else {
+				// Append new content to existing raw content
+				currentRawContent += content;
+			}
 
 			if (isMarkdown && typeof marked !== 'undefined') {
 				// Render markdown with syntax highlighting
-				resultsElement.innerHTML = marked.parse(content);
+				resultsElement.innerHTML = marked.parse(currentRawContent);
 				// Apply syntax highlighting to code blocks
 				if (typeof hljs !== 'undefined') {
 					resultsElement.querySelectorAll('pre code').forEach((block) => {
@@ -504,7 +517,7 @@ function getWebviewContent() {
 				addCopyButtonsToCodeBlocks();
 			} else {
 				// Fallback to plain text
-				resultsElement.textContent = content;
+				resultsElement.textContent = currentRawContent;
 			}
 
 			if (isComplete) {
@@ -588,7 +601,7 @@ async function callStreamingService(userContent, panel, outputChannel) {
 		}
 	});
 
-	let webviewContent = `**Request:** ${userContent}\n\n**Response:**\n\n`;
+	let webviewContent = '';
 
 	return new Promise((resolve, reject) => {
 		const url = new URL(serviceUrl);
@@ -607,10 +620,9 @@ async function callStreamingService(userContent, panel, outputChannel) {
 		const req = http.request(options, (res) => {
 			if (res.statusCode !== 200) {
 				const errorMsg = `**Error:** HTTP ${res.statusCode}`;
-				webviewContent += errorMsg;
 				panel.webview.postMessage({
-					command: 'updateResults',
-					content: webviewContent,
+					command: 'appendResults',
+					content: errorMsg,
 					isMarkdown: true
 				});
 				outputChannel.appendLine(`[ERROR] Streaming service HTTP error: ${res.statusCode}`);
@@ -646,10 +658,9 @@ async function callStreamingService(userContent, panel, outputChannel) {
 									content = content.replace(/\\"/g, '"');
 
 									// Add to webview content and update
-									webviewContent += content;
 									panel.webview.postMessage({
-										command: 'updateResults',
-										content: webviewContent,
+										command: 'appendResults',
+										content: content,
 										isMarkdown: true
 									});
 								}
@@ -674,19 +685,17 @@ async function callStreamingService(userContent, panel, outputChannel) {
 					const modelsData = await modelsResponse.json();
 
 					const completionMsg = `\n\n**--- Stream completed ---**\n\n**Messages:** ${memoryData.count} | **Token Count Estimate:** ${memoryData.tokens} | **Limit:** ${memoryData.limit}\n\n**Chat Model:** ${modelsData.chat_model}\n\n**Embeddings Model:** ${modelsData.embeddings_model}`;
-					webviewContent += completionMsg;
 					panel.webview.postMessage({
-						command: 'updateResults',
-						content: webviewContent,
+						command: 'appendResults',
+						content: completionMsg,
 						isMarkdown: true
 					});
 				} catch (error) {
 					// Fallback if memory endpoint fails
 					const completionMsg = '\n\n**--- Stream completed ---**';
-					webviewContent += completionMsg;
 					panel.webview.postMessage({
-						command: 'updateResults',
-						content: webviewContent,
+						command: 'appendResults',
+						content: completionMsg,
 						isMarkdown: true
 					});
 					outputChannel.appendLine(`[WARNING] Failed to fetch memory stats: ${error.message}`);
@@ -696,10 +705,9 @@ async function callStreamingService(userContent, panel, outputChannel) {
 
 			res.on('error', (error) => {
 				const errorMsg = `\n**Error:** ${error.message}`;
-				webviewContent += errorMsg;
 				panel.webview.postMessage({
-					command: 'updateResults',
-					content: webviewContent,
+					command: 'appendResults',
+					content: errorMsg,
 					isMarkdown: true
 				});
 				outputChannel.appendLine(`[ERROR] Streaming service response error: ${error.message}`);
@@ -710,10 +718,9 @@ async function callStreamingService(userContent, panel, outputChannel) {
 
 		req.on('error', (error) => {
 			const errorMsg = `\n**Request Error:** ${error.message}`;
-			webviewContent += errorMsg;
 			panel.webview.postMessage({
-				command: 'updateResults',
-				content: webviewContent,
+				command: 'appendResults',
+				content: errorMsg,
 				isMarkdown: true
 			});
 			outputChannel.appendLine(`[ERROR] Streaming service request error: ${error.message}`);

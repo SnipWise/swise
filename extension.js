@@ -205,7 +205,7 @@ function getWebviewContent() {
 			border: 1px solid var(--vscode-panel-border);
 			min-height: 100px;
 			display: block;
-			overflow-y: auto;
+			overflow-x: hidden;
 		}
 		.results-content pre {
 			background-color: var(--vscode-textPreformat-background);
@@ -494,6 +494,7 @@ function getWebviewContent() {
 
 		function showResults(content, isComplete, isMarkdown = false) {
 			const resultsElement = document.getElementById('resultsContent');
+			const resultsContainer = document.querySelector('.results-container');
 
 			// If shouldResetResults is true, replace content. Otherwise append
 			if (shouldResetResults) {
@@ -520,8 +521,23 @@ function getWebviewContent() {
 				resultsElement.textContent = currentRawContent;
 			}
 
-			if (isComplete) {
-				resultsElement.scrollTop = resultsElement.scrollHeight;
+			// Auto-scroll to bottom during stream - force scroll after all DOM updates
+			scrollToBottom();
+		}
+
+		function scrollToBottom() {
+			const resultsContainer = document.querySelector('.results-container');
+			if (resultsContainer) {
+				// Force immediate scroll
+				resultsContainer.scrollTop = resultsContainer.scrollHeight;
+				// Also schedule another scroll after next paint
+				requestAnimationFrame(() => {
+					resultsContainer.scrollTop = resultsContainer.scrollHeight;
+					// And one more after layout
+					setTimeout(() => {
+						resultsContainer.scrollTop = resultsContainer.scrollHeight;
+					}, 100);
+				});
 			}
 		}
 
@@ -700,6 +716,7 @@ async function callStreamingService(userContent, panel, outputChannel) {
 					});
 					outputChannel.appendLine(`[WARNING] Failed to fetch memory stats: ${error.message}`);
 				}
+
 				resolve();
 			});
 

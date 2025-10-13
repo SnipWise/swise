@@ -2,3 +2,4 @@ node_modules
 tasks
 .claude
 .vscode-test
+tmp

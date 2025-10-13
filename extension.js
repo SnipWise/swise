@@ -101,6 +101,11 @@ async function activate(context) {
 								isMarkdown: true
 							});
 
+							// Start progress animation
+							panel.webview.postMessage({
+								command: 'startProgress'
+							});
+
 							// Call the streaming service with webview panel for live updates
 							await callStreamingService(userInput, panel, outputChannel);
 
@@ -314,6 +319,12 @@ function getWebviewContent() {
 			margin-top: 10px;
 			display: none;
 		}
+		.progress-message {
+			color: var(--vscode-terminal-ansiCyan);
+			margin-top: 10px;
+			display: none;
+			font-style: italic;
+		}
 		.placeholder-text {
 			color: var(--vscode-input-placeholderForeground);
 			font-size: 12px;
@@ -344,6 +355,7 @@ function getWebviewContent() {
 					Describe your request in detail to get the best possible response.
 				</div>
 				<div class="error-message" id="errorMessage"></div>
+				<div class="progress-message" id="progressMessage"></div>
 				<div class="success-message" id="successMessage">✓ Request sent successfully!</div>
 				<div class="button-container">
 					<button type="button" id="copyResultButton" class="cancel-button">Copy Result</button>
@@ -384,6 +396,20 @@ function getWebviewContent() {
 		// Variable to track if we should reset results or append
 		let shouldResetResults = true;
 
+		// Variables for progress animation
+		let progressInterval = null;
+		let progressMessageIndex = 0;
+		const progressMessages = [
+			'🤔 Thinking...',
+			'💭 Processing your request...',
+			'🔍 Analyzing context...',
+			'✨ Generating response...',
+			'🧠 Considering options...',
+			'📝 Composing answer...',
+			'🎯 Refining thoughts...',
+			'⚡ Working on it...'
+		];
+
 		// Initialize with markdown content
 		showResults('*No results yet. Use the form below to submit a request.*', true, true);
 
@@ -399,7 +425,7 @@ function getWebviewContent() {
 				return;
 			}
 
-			// Send message to extension
+			// Send message to extension (animation will be started by backend)
 			vscode.postMessage({
 				command: 'submitRequest',
 				text: text
@@ -463,21 +489,33 @@ function getWebviewContent() {
 			const message = event.data;
 			switch (message.command) {
 				case 'showError':
+					stopProgressAnimation();
 					showError(message.message);
 					break;
 				case 'clearForm':
+					stopProgressAnimation();
 					clearForm();
+					break;
+				case 'startProgress':
+					// Start progress animation (sent from extension)
+					startProgressAnimation();
+					break;
+				case 'stopProgress':
+					// Stop progress animation (sent from extension when first content arrives)
+					stopProgressAnimation();
 					break;
 				case 'appendResults':
 					// Append new content to existing results
 					showResults(message.content, true, message.isMarkdown);
 					break;
 				case 'resetResults':
+					stopProgressAnimation();
 					// Reset the conversation history
 					shouldResetResults = true;
 					showResults(message.content, true, message.isMarkdown);
 					break;
 				case 'showCancelSuccess':
+					stopProgressAnimation();
 					showResults(message.content, true, message.isMarkdown);
 					break;
 			}
@@ -490,6 +528,28 @@ function getWebviewContent() {
 			setTimeout(() => {
 				errorElement.style.display = 'none';
 			}, 5000);
+		}
+
+		function startProgressAnimation() {
+			const progressElement = document.getElementById('progressMessage');
+			progressMessageIndex = 0;
+			progressElement.textContent = progressMessages[progressMessageIndex];
+			progressElement.style.display = 'block';
+
+			// Change message every 2 seconds
+			progressInterval = setInterval(() => {
+				progressMessageIndex = (progressMessageIndex + 1) % progressMessages.length;
+				progressElement.textContent = progressMessages[progressMessageIndex];
+			}, 2000);
+		}
+
+		function stopProgressAnimation() {
+			if (progressInterval) {
+				clearInterval(progressInterval);
+				progressInterval = null;
+			}
+			const progressElement = document.getElementById('progressMessage');
+			progressElement.style.display = 'none';
 		}
 
 		function showResults(content, isComplete, isMarkdown = false) {
@@ -618,6 +678,7 @@ async function callStreamingService(userContent, panel, outputChannel) {
 	});
 
 	let webviewContent = '';
+	let firstChunkReceived = false;
 
 	return new Promise((resolve, reject) => {
 		const url = new URL(serviceUrl);
@@ -635,6 +696,10 @@ async function callStreamingService(userContent, panel, outputChannel) {
 
 		const req = http.request(options, (res) => {
 			if (res.statusCode !== 200) {
+				// Stop progress animation on error
+				panel.webview.postMessage({
+					command: 'stopProgress'
+				});
 				const errorMsg = `**Error:** HTTP ${res.statusCode}`;
 				panel.webview.postMessage({
 					command: 'appendResults',
@@ -674,6 +739,7 @@ async function callStreamingService(userContent, panel, outputChannel) {
 									content = content.replace(/\\"/g, '"');
 
 									// Add to webview content and update
+									// Keep animation running during streaming
 									panel.webview.postMessage({
 										command: 'appendResults',
 										content: content,
@@ -689,6 +755,11 @@ async function callStreamingService(userContent, panel, outputChannel) {
 			});
 
 			res.on('end', async () => {
+				// Stop progress animation when stream is complete
+				panel.webview.postMessage({
+					command: 'stopProgress'
+				});
+
 				try {
 					// Fetch memory statistics
 					const memoryUrl = `${baseUrl}/memory/messages/tokens`;
@@ -721,6 +792,10 @@ async function callStreamingService(userContent, panel, outputChannel) {
 			});
 
 			res.on('error', (error) => {
+				// Stop progress animation on error
+				panel.webview.postMessage({
+					command: 'stopProgress'
+				});
 				const errorMsg = `\n**Error:** ${error.message}`;
 				panel.webview.postMessage({
 					command: 'appendResults',
@@ -734,6 +809,10 @@ async function callStreamingService(userContent, panel, outputChannel) {
 		});
 
 		req.on('error', (error) => {
+			// Stop progress animation on error
+			panel.webview.postMessage({
+				command: 'stopProgress'
+			});
 			const errorMsg = `\n**Request Error:** ${error.message}`;
 			panel.webview.postMessage({
 				command: 'appendResults',

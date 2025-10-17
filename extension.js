@@ -145,6 +145,21 @@ async function activate(context) {
 							outputChannel.show();
 						}
 						break;
+					case 'toolOperation':
+						// Handle tool operation (validate/cancel/reset)
+						try {
+							await callToolOperationService(message.action, message.operationId, panel, outputChannel);
+							outputChannel.appendLine(`[INFO] Tool operation '${message.action}' executed for operation ${message.operationId}`);
+						} catch (error) {
+							outputChannel.appendLine(`[ERROR] Failed to execute tool operation: ${error.message}`);
+							outputChannel.show();
+							panel.webview.postMessage({
+								command: 'appendResults',
+								content: `\n\n**Error:** Failed to ${message.action} operation: ${error.message}`,
+								isMarkdown: true
+							});
+						}
+						break;
 				}
 			},
 			undefined,
@@ -518,6 +533,10 @@ function getWebviewContent() {
 					stopProgressAnimation();
 					showResults(message.content, true, message.isMarkdown);
 					break;
+				case 'showToolValidation':
+					stopProgressAnimation();
+					showToolValidationButtons(message.operationId, message.message);
+					break;
 			}
 		});
 
@@ -643,6 +662,67 @@ function getWebviewContent() {
 			});
 		}
 
+		function showToolValidationButtons(operationId, message) {
+			console.log('showToolValidationButtons called', operationId, message);
+
+			// Create a unique container ID for this operation
+			const containerId = 'tool-validation-' + operationId.replace(/[^a-zA-Z0-9]/g, '_');
+
+			// Add HTML content directly
+			const htmlContent = \`
+<div style="background-color: var(--vscode-editor-inactiveSelectionBackground); padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid var(--vscode-editorWarning-foreground);">
+	<p style="margin: 0 0 10px 0;"><strong>⚠️ \${message}</strong></p>
+	<p style="margin: 0 0 10px 0; font-size: 0.9em; opacity: 0.8;">Operation ID: <code>\${operationId}</code></p>
+	<div id="\${containerId}" style="display: flex; gap: 10px; flex-wrap: wrap;">
+		<button onclick="handleToolOperation('validate', '\${operationId}', '\${containerId}')" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+			✅ Validate
+		</button>
+		<button onclick="handleToolOperation('cancel', '\${operationId}', '\${containerId}')" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+			⛔️ Cancel
+		</button>
+		<button onclick="handleToolOperation('reset', '\${operationId}', '\${containerId}')" style="background-color: #ffc107; color: #212529; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+			🔄 Reset
+		</button>
+	</div>
+</div>
+\`;
+
+			// Append the HTML content to the results
+			const resultsElement = document.getElementById('resultsContent');
+			resultsElement.insertAdjacentHTML('beforeend', htmlContent);
+
+			scrollToBottom();
+		}
+
+		function handleToolOperation(action, operationId, containerId) {
+			console.log('handleToolOperation called', action, operationId, containerId);
+
+			// Disable all buttons in the container
+			if (containerId) {
+				const container = document.getElementById(containerId);
+				if (container) {
+					const buttons = container.querySelectorAll('button');
+					buttons.forEach(btn => {
+						btn.disabled = true;
+						btn.style.opacity = '0.5';
+						btn.style.cursor = 'not-allowed';
+					});
+				}
+			}
+
+			// Send message to extension
+			vscode.postMessage({
+				command: 'toolOperation',
+				action: action,
+				operationId: operationId
+			});
+
+			// Show loading message
+			const resultsElement = document.getElementById('resultsContent');
+			resultsElement.insertAdjacentHTML('beforeend', '<p style="font-style: italic; color: var(--vscode-terminal-ansiCyan);">Processing ' + action + ' operation...</p>');
+			scrollToBottom();
+		}
+
 		function clearForm() {
 			const input = document.getElementById('requestInput');
 			input.value = '';
@@ -727,6 +807,17 @@ async function callStreamingService(userContent, panel, outputChannel) {
 							if (jsonData.trim() === '') return;
 
 							const parsed = JSON.parse(jsonData);
+
+							// Check for tool validation message
+							if (parsed.status === 'pending' && parsed.operation_id) {
+								panel.webview.postMessage({
+									command: 'showToolValidation',
+									operationId: parsed.operation_id,
+									message: parsed.message || 'Tool detected'
+								});
+								return;
+							}
+
 							if (parsed.message) {
 								// Clean up the message (remove quotes and unescape)
 								let content = parsed.message;
@@ -737,6 +828,23 @@ async function callStreamingService(userContent, panel, outputChannel) {
 									}
 									// Unescape quotes
 									content = content.replace(/\\"/g, '"');
+
+									// Check if this message contains a tool validation JSON (new format with kind)
+									try {
+										const toolMatch = content.match(/\{"kind":\s*"tool_call",\s*"message":\s*"([^"]+)",\s*"status":\s*"pending",\s*"operation_id":\s*"([^"]+)"\}/);
+										if (toolMatch) {
+											const toolMessage = toolMatch[1];
+											const operationId = toolMatch[2];
+											panel.webview.postMessage({
+												command: 'showToolValidation',
+												operationId: operationId,
+												message: toolMessage
+											});
+											return;
+										}
+									} catch (e) {
+										// Not a tool validation message, continue
+									}
 
 									// Add to webview content and update
 									// Keep animation running during streaming
@@ -820,6 +928,137 @@ async function callStreamingService(userContent, panel, outputChannel) {
 				isMarkdown: true
 			});
 			outputChannel.appendLine(`[ERROR] Streaming service request error: ${error.message}`);
+			outputChannel.show();
+			reject(error);
+		});
+
+		req.write(data);
+		req.end();
+	});
+}
+
+async function callToolOperationService(action, operationId, panel, outputChannel) {
+	const config = vscode.workspace.getConfiguration('swiseAgentExtension');
+	const baseUrl = config.get('serviceBaseUrl', 'http://0.0.0.0:3500');
+	const serviceUrl = `${baseUrl}/operation/${action}`;
+
+	const data = JSON.stringify({
+		operation_id: operationId
+	});
+
+	return new Promise((resolve, reject) => {
+		const url = new URL(serviceUrl);
+		const options = {
+			hostname: url.hostname,
+			port: url.port,
+			path: url.pathname,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'text/event-stream',
+				'Content-Length': Buffer.byteLength(data)
+			}
+		};
+
+		const req = http.request(options, (res) => {
+			if (res.statusCode !== 200) {
+				panel.webview.postMessage({
+					command: 'stopProgress'
+				});
+				const errorMsg = `**Error:** HTTP ${res.statusCode}`;
+				panel.webview.postMessage({
+					command: 'appendResults',
+					content: errorMsg,
+					isMarkdown: true
+				});
+				outputChannel.appendLine(`[ERROR] Tool operation service HTTP error: ${res.statusCode}`);
+				outputChannel.show();
+				reject(new Error(`HTTP ${res.statusCode}`));
+				return;
+			}
+
+			res.setEncoding('utf8');
+			let buffer = '';
+
+			res.on('data', (chunk) => {
+				buffer += chunk;
+				const lines = buffer.split('\n');
+				buffer = lines.pop();
+
+				lines.forEach(line => {
+					if (line.startsWith('data: ')) {
+						try {
+							const jsonData = line.substring(6);
+							if (jsonData.trim() === '') return;
+
+							const parsed = JSON.parse(jsonData);
+
+							// Check for another tool validation message
+							if (parsed.status === 'pending' && parsed.operation_id) {
+								panel.webview.postMessage({
+									command: 'showToolValidation',
+									operationId: parsed.operation_id,
+									message: parsed.message || 'Tool detected'
+								});
+								return;
+							}
+
+							if (parsed.message) {
+								let content = parsed.message;
+								if (typeof content === 'string') {
+									if (content.startsWith('"') && content.endsWith('"')) {
+										content = content.slice(1, -1);
+									}
+									content = content.replace(/\\"/g, '"');
+
+									panel.webview.postMessage({
+										command: 'appendResults',
+										content: content,
+										isMarkdown: true
+									});
+								}
+							}
+						} catch {
+							// Ignore JSON parse errors
+						}
+					}
+				});
+			});
+
+			res.on('end', () => {
+				panel.webview.postMessage({
+					command: 'stopProgress'
+				});
+				resolve();
+			});
+
+			res.on('error', (error) => {
+				panel.webview.postMessage({
+					command: 'stopProgress'
+				});
+				const errorMsg = `\n**Error:** ${error.message}`;
+				panel.webview.postMessage({
+					command: 'appendResults',
+					content: errorMsg,
+					isMarkdown: true
+				});
+				outputChannel.appendLine(`[ERROR] Tool operation service response error: ${error.message}`);
+				outputChannel.show();
+				reject(error);
+			});
+		});
+
+		req.on('error', (error) => {
+			panel.webview.postMessage({
+				command: 'stopProgress'
+			});
+			const errorMsg = `\n**Request Error:** ${error.message}`;
+			panel.webview.postMessage({
+				command: 'appendResults',
+				content: errorMsg,
+				isMarkdown: true
+			});
+			outputChannel.appendLine(`[ERROR] Tool operation service request error: ${error.message}`);
 			outputChannel.show();
 			reject(error);
 		});

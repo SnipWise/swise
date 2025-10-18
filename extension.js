@@ -809,7 +809,7 @@ async function callStreamingService(userContent, panel, outputChannel) {
 							const parsed = JSON.parse(jsonData);
 
 							// Check for tool validation message
-							if (parsed.status === 'pending' && parsed.operation_id) {
+							if (parsed.kind === 'tool_call' && parsed.status === 'pending' && parsed.operation_id) {
 								panel.webview.postMessage({
 									command: 'showToolValidation',
 									operationId: parsed.operation_id,
@@ -831,17 +831,28 @@ async function callStreamingService(userContent, panel, outputChannel) {
 
 									// Check if this message contains a tool validation JSON (new format with kind)
 									try {
-										const toolMatch = content.match(/\{"kind":\s*"tool_call",\s*"message":\s*"([^"]+)",\s*"status":\s*"pending",\s*"operation_id":\s*"([^"]+)"\}/);
-										if (toolMatch) {
-											const toolMessage = toolMatch[1];
-											const operationId = toolMatch[2];
+										let toolData = JSON.parse(content);
+										if (toolData.kind === 'tool_call' && toolData.status === 'pending' && toolData.operation_id) {
 											panel.webview.postMessage({
 												command: 'showToolValidation',
-												operationId: operationId,
-												message: toolMessage
+												operationId: toolData.operation_id,
+												message: toolData.message || 'Tool detected'
 											});
 											return;
 										}
+
+
+										// const toolMatch = content.match(/\{"kind":\s*"tool_call",\s*"message":\s*"([^"]+)",\s*"status":\s*"pending",\s*"operation_id":\s*"([^"]+)"\}/);
+										// if (toolMatch) {
+										// 	const toolMessage = toolMatch[1];
+										// 	const operationId = toolMatch[2];
+										// 	panel.webview.postMessage({
+										// 		command: 'showToolValidation',
+										// 		operationId: operationId,
+										// 		message: toolMessage
+										// 	});
+										// 	return;
+										// }
 									} catch (e) {
 										// Not a tool validation message, continue
 									}
@@ -879,7 +890,7 @@ async function callStreamingService(userContent, panel, outputChannel) {
 					const modelsResponse = await fetch(modelsUrl);
 					const modelsData = await modelsResponse.json();
 
-					const completionMsg = `\n\n**--- Stream completed ---**\n\n**Messages:** ${memoryData.count} | **Token Count Estimate:** ${memoryData.tokens} | **Limit:** ${memoryData.limit}\n\n**Chat Model:** ${modelsData.chat_model}\n\n**Embeddings Model:** ${modelsData.embeddings_model}`;
+					const completionMsg = `\n\n**--- Stream completed ---**\n\n**Messages:** ${memoryData.count} | **Token Count Estimate:** ${memoryData.tokens} | **Limit:** ${memoryData.limit}\n\n**Chat Model:** ${modelsData.chat_model}\n\n**Embeddings Model:** ${modelsData.embeddings_model}\n\n**Tools Model:** ${modelsData.tools_model}`;
 					panel.webview.postMessage({
 						command: 'appendResults',
 						content: completionMsg,
@@ -994,7 +1005,7 @@ async function callToolOperationService(action, operationId, panel, outputChanne
 							const parsed = JSON.parse(jsonData);
 
 							// Check for another tool validation message
-							if (parsed.status === 'pending' && parsed.operation_id) {
+							if (parsed.kind === 'tool_call' && parsed.status === 'pending' && parsed.operation_id) {
 								panel.webview.postMessage({
 									command: 'showToolValidation',
 									operationId: parsed.operation_id,

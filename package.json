@@ -2,7 +2,7 @@
   "name": "swise-agent-extension",
   "displayName": "swise-agent-extension",
   "description": "Swise Agent Extension",
-  "version": "0.0.0-dev",
+  "version": "0.0.1-dev",
   "publisher": "k33gorg",
   "engines": {
     "vscode": "^1.104.0"

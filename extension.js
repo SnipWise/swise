@@ -697,18 +697,16 @@ function getWebviewContent() {
 		function handleToolOperation(action, operationId, containerId) {
 			console.log('handleToolOperation called', action, operationId, containerId);
 
-			// Disable all buttons in the container
-			if (containerId) {
-				const container = document.getElementById(containerId);
-				if (container) {
-					const buttons = container.querySelectorAll('button');
-					buttons.forEach(btn => {
-						btn.disabled = true;
-						btn.style.opacity = '0.5';
-						btn.style.cursor = 'not-allowed';
-					});
-				}
-			}
+			// Disable all buttons in ALL tool validation containers
+			const allContainers = document.querySelectorAll('[id^="tool-validation-"]');
+			allContainers.forEach(container => {
+				const buttons = container.querySelectorAll('button');
+				buttons.forEach(btn => {
+					btn.disabled = true;
+					btn.style.opacity = '0.5';
+					btn.style.cursor = 'not-allowed';
+				});
+			});
 
 			// Send message to extension
 			vscode.postMessage({

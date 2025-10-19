@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Find VSIX file
+        id: find_vsix
+        run: |
+          VSIX_FILE=$(ls swise-agent-extension-*.vsix 2>/dev/null | head -n 1)
+          if [ -z "$VSIX_FILE" ]; then
+            echo "Error: No VSIX file found"
+            exit 1
+          fi
+          echo "vsix_file=$VSIX_FILE" >> $GITHUB_OUTPUT
+          echo "Found VSIX file: $VSIX_FILE"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.find_vsix.outputs.vsix_file }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

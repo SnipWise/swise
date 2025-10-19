@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 🤚 check package.json file
-VERSION="0.0.1"
+VERSION="0.0.2"
 # Package for tests
 npx @vscode/vsce package
 # Install

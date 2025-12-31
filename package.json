@@ -1,7 +1,7 @@
 {
-  "name": "swise-agent-extension",
-  "displayName": "swise-agent-extension",
-  "description": "Swise Agent Extension",
+  "name": "swise-extension",
+  "displayName": "swise-extension",
+  "description": "Swise Extension",
   "version": "0.0.0",
   "publisher": "k33gorg",
   "engines": {
@@ -20,18 +20,18 @@
   "contributes": {
     "commands": [
       {
-        "command": "swise-agent-extension.helloWorld",
+        "command": "swiseExtension.helloWorld",
         "title": "Hello World"
       },
       {
-        "command": "swise-agent-extension.callService",
-        "title": "Call SNIP Streaming Service"
+        "command": "swiseExtension.callService",
+        "title": "Open Swise"
       }
     ],
     "configuration": {
-      "title": "Swise Agent Extension",
+      "title": "Swise Extension Configuration",
       "properties": {
-        "swiseAgentExtension.serviceBaseUrl": {
+        "swiseExtension.serviceBaseUrl": {
           "type": "string",
           "default": "http://0.0.0.0:3500",
           "description": "Base URL to access the completion service",

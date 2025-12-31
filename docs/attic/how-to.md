@@ -19,7 +19,7 @@ This creates a `.vsix` file. Then install it:
 
 OR via command line:
 ```bash
-code --install-extension swise-agent-extension-0.0.0-dev.vsix
+code --install-extension swise-extension-0.0.0-dev.vsix
 ```
 
 ## 3. Link for Development

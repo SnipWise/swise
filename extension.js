@@ -8,33 +8,37 @@ const hljs = require('highlight.js');
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 
+const OUTPUT_CHANNEL_NAME = 'Swise Extension';
+// [CONFIGURATION]
+const EXTENSION_TITLE = 'Swise Extension';
+const SERVICE_BASE_URL_CONFIG = 'http://0.0.0.0:3500';
+const EXTENSION_ID = 'swiseExtension';
 /**
  * @param {vscode.ExtensionContext} context
  */
-
 async function activate(context) {
 
 	// Create output channel for logging errors and messages
-	const outputChannel = vscode.window.createOutputChannel('Swise Agent Extension');
+	const outputChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "swise-agent-extension" is now active!');
-	outputChannel.appendLine('Swise Agent Extension activated successfully');
+	console.log(`Congratulations, your extension "${EXTENSION_TITLE}" is now active!`);
+	outputChannel.appendLine(`${EXTENSION_TITLE} activated successfully`);
 
 	// Check service health at startup
 	try {
 		await checkServiceHealth(outputChannel);
-		vscode.window.showInformationMessage('Swise Agent Extension: Completion Service is available.');
+		vscode.window.showInformationMessage(`${EXTENSION_TITLE}: Completion Service is available.`);
 	} catch (error) {
-		const config = vscode.workspace.getConfiguration('swiseAgentExtension');
-		const baseUrl = config.get('serviceBaseUrl', 'http://0.0.0.0:3500');
-		const errorMessage = `Swise [SNIP] Agent Extension: Completion Service is not available at ${baseUrl}/health. Error: ${error.message}`;
+		const config = vscode.workspace.getConfiguration(EXTENSION_ID);
+		const baseUrl = config.get('serviceBaseUrl', SERVICE_BASE_URL_CONFIG);
+		const errorMessage = `${EXTENSION_TITLE}: Completion Service is not available at ${baseUrl}/health. Error: ${error.message}`;
 
 		vscode.window.showErrorMessage(errorMessage, 'Open settings', 'Ignore')
 			.then(selection => {
 				if (selection === 'Open settings') {
-					vscode.commands.executeCommand('workbench.action.openSettings', 'swiseAgentExtension.serviceBaseUrl');
+					vscode.commands.executeCommand('workbench.action.openSettings', `${EXTENSION_ID}.serviceBaseUrl`);
 				}
 			});
 		outputChannel.show();
@@ -60,20 +64,20 @@ async function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('swise-agent-extension.helloWorld', function () {
+	const disposable = vscode.commands.registerCommand(`${EXTENSION_ID}.helloWorld`, function () {
 		// The code you place here will be executed every time your command is executed
 
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from swise-agent-extension!');
+		vscode.window.showInformationMessage(`Hello World from ${EXTENSION_ID}!`);
 	});
 
 	// Register the streaming service command
-	const streamingDisposable = vscode.commands.registerCommand('swise-agent-extension.callService', async function () {
+	const streamingDisposable = vscode.commands.registerCommand(`${EXTENSION_ID}.callService`, async function () {
 		// Create and show webview panel with form anchored to the right
 		const iconPath = vscode.Uri.joinPath(context.extensionUri, 'robot-icon.svg');
 		const panel = vscode.window.createWebviewPanel(
 			'serviceForm',
-			'Swise [SNIP] Agent Form',
+			EXTENSION_TITLE,
 			{ viewColumn: vscode.ViewColumn.Two, preserveFocus: false },
 			{
 				enableScripts: true,
@@ -170,13 +174,13 @@ async function activate(context) {
 	context.subscriptions.push(disposable, streamingDisposable);
 }
 
-function getWebviewContent() {
+function getWebviewContent() { 
 	return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Swise [SNIP] Agent Form</title>
+	<title>${EXTENSION_ID}</title>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/vs2015.min.css">
 	<style>
 		body {
@@ -745,8 +749,8 @@ function getWebviewContent() {
 }
 
 async function callStreamingService(userContent, panel, outputChannel) {
-	const config = vscode.workspace.getConfiguration('swiseAgentExtension');
-	const baseUrl = config.get('serviceBaseUrl', 'http://0.0.0.0:3500');
+	const config = vscode.workspace.getConfiguration(EXTENSION_ID);
+	const baseUrl = config.get('serviceBaseUrl', SERVICE_BASE_URL_CONFIG);
 	const serviceUrl = `${baseUrl}/completion`;
 
 	const data = JSON.stringify({
@@ -947,8 +951,8 @@ async function callStreamingService(userContent, panel, outputChannel) {
 }
 
 async function callToolOperationService(action, operationId, panel, outputChannel) {
-	const config = vscode.workspace.getConfiguration('swiseAgentExtension');
-	const baseUrl = config.get('serviceBaseUrl', 'http://0.0.0.0:3500');
+	const config = vscode.workspace.getConfiguration(EXTENSION_ID);
+	const baseUrl = config.get('serviceBaseUrl', SERVICE_BASE_URL_CONFIG);
 	const serviceUrl = `${baseUrl}/operation/${action}`;
 
 	const data = JSON.stringify({
@@ -1078,8 +1082,8 @@ async function callToolOperationService(action, operationId, panel, outputChanne
 }
 
 async function checkServiceHealth(outputChannel) {
-	const config = vscode.workspace.getConfiguration('swiseAgentExtension');
-	const baseUrl = config.get('serviceBaseUrl', 'http://0.0.0.0:3500');
+	const config = vscode.workspace.getConfiguration(EXTENSION_ID);
+	const baseUrl = config.get('serviceBaseUrl', SERVICE_BASE_URL_CONFIG);
 	const healthUrl = `${baseUrl}/health`;
 
 	return new Promise((resolve, reject) => {
@@ -1140,8 +1144,8 @@ async function checkServiceHealth(outputChannel) {
 }
 
 async function callStopService(outputChannel) {
-	const config = vscode.workspace.getConfiguration('swiseAgentExtension');
-	const baseUrl = config.get('serviceBaseUrl', 'http://0.0.0.0:3500');
+	const config = vscode.workspace.getConfiguration(EXTENSION_ID);
+	const baseUrl = config.get('serviceBaseUrl', SERVICE_BASE_URL_CONFIG);
 	const serviceUrl = `${baseUrl}/completion/stop`;
 
 	return new Promise((resolve, reject) => {
@@ -1182,8 +1186,8 @@ async function callStopService(outputChannel) {
 }
 
 async function callResetService(outputChannel) {
-	const config = vscode.workspace.getConfiguration('swiseAgentExtension');
-	const baseUrl = config.get('serviceBaseUrl', 'http://0.0.0.0:3500');
+	const config = vscode.workspace.getConfiguration(EXTENSION_ID);
+	const baseUrl = config.get('serviceBaseUrl', SERVICE_BASE_URL_CONFIG);
 	const serviceUrl = `${baseUrl}/memory/reset`;
 
 	return new Promise((resolve, reject) => {

@@ -21,7 +21,7 @@ go run ./release/release.go -old="\"version\": \"${PREVIOUS_EXTENSION_TAG}\"" -n
 
 npx @vscode/vsce package
 # Install
-code --install-extension swise-agent-extension-${EXTENSION_TAG}.vsix
+code --install-extension swise-extension-${EXTENSION_TAG}.vsix
 
 git add .
 git commit -m "📦 ${ABOUT}"

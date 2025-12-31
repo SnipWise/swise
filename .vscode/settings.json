@@ -1,8 +1,8 @@
 {
     "workbench.iconTheme": "material-icon-theme",
     "workbench.colorTheme": "Idea intellij light theme",
-    "editor.fontSize": 16,
-    "terminal.integrated.fontSize": 16,
+    "editor.fontSize": 14,
+    "terminal.integrated.fontSize": 14,
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
     "editor.detectIndentation": true,
@@ -18,7 +18,7 @@
         "diffEditor.ignoreTrimWhitespace": false,
         "editor.fontWeight": "normal",
         "editor.fontFamily": "'Droid Sans Mono', 'monospace', monospace",
-        "editor.fontSize": 20,
+        "editor.fontSize": 14,
         "editor.wordWrap": "on",
         "editor.quickSuggestions": {
             "comments": "off",
@@ -26,29 +26,29 @@
             "other": "off"
         }
     },
-    "markdown.preview.fontSize": 20,
+    "markdown.preview.fontSize": 14,
     "workbench.editorAssociations": {
         "*.md": "vscode.markdown.preview.editor"
     },
     "markdown.marp.html": "all"  ,
     "[dockerfile]": {
-        "editor.fontSize": 20,
+        "editor.fontSize": 14,
     },
     "[dockercompose]": {
-        "editor.fontSize": 20,
+        "editor.fontSize": 14,
     },
     "[json]": {
-        "editor.fontSize": 20,
+        "editor.fontSize": 14,
     },
     "[javascript]": {
         "editor.fontSize": 14,
     },    
     "[yaml]": {
-        "editor.fontSize": 20,
+        "editor.fontSize": 14,
 
     },
     "[go]": {
-        "editor.fontSize": 20,
+        "editor.fontSize": 14,
     },
     "todohighlight.keywords": [ 
         {
@@ -75,6 +75,21 @@
             "borderRadius": "3px",
             "isWholeLine": false
         },    
-                                
+        {
+            "text": "[CONFIGURATION]",
+            "color": "#ffffff",
+            "backgroundColor": "#9E0D9B",
+            "border": "1px solid #9E0D9B",
+            "borderRadius": "3px",
+            "isWholeLine": false
+        }, 
+        {
+            "text": "[SETTINGS]",
+            "color": "#ffffff",
+            "backgroundColor": "#9E0D9B",
+            "border": "1px solid #9E0D9B",
+            "borderRadius": "3px",
+            "isWholeLine": false
+        },                                                         
     ]
 }

@@ -13,7 +13,7 @@ echo "Generating release: ${TAG} ${ABOUT}"
 
 find . -name '.DS_Store' -type f -delete
 
-rm swise-agent-extension-*.vsix
+rm swise-extension-*.vsix
 # echo "📝 Replacing ${PREVIOUS_DOCKER_TAG} by ${DOCKER_TAG} in files..."
 
 go run ./release/release.go -old="\"version\": \"${PREVIOUS_EXTENSION_TAG}\"" -new="\"version\": \"${EXTENSION_TAG}\"" -file="package.json"

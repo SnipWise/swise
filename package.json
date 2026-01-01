@@ -2,7 +2,7 @@
   "name": "swise-extension",
   "displayName": "swise-extension",
   "description": "Swise Extension",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "publisher": "k33gorg",
   "engines": {
     "vscode": "^1.104.0"

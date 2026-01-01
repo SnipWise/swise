@@ -18,7 +18,7 @@ jobs:
       - name: Find VSIX file
         id: find_vsix
         run: |
-          VSIX_FILE=$(ls swise-agent-extension-*.vsix 2>/dev/null | head -n 1)
+          VSIX_FILE=$(ls swise-extension-*.vsix 2>/dev/null | head -n 1)
           if [ -z "$VSIX_FILE" ]; then
             echo "Error: No VSIX file found"
             exit 1
